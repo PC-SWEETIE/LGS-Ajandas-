@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LGS Ajandam</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7ff;color:#20243a}
+button,input,select,textarea{font:inherit}
+button{border:0;border-radius:14px;padding:12px 16px;cursor:pointer;background:#5967ff;color:white;font-weight:700}
+button:active{transform:scale(.97)}
+header{background:linear-gradient(135deg,#5967ff,#8b5cf6);color:white;padding:18px;text-align:center}
+header h1{margin:0}
+main{max-width:1000px;margin:auto;padding:18px}
+.page{display:none}.page.active{display:block}
+.card{background:white;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 5px 20px #0000000d}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.stat{font-size:28px;font-weight:800}
+.small{color:#70758a;font-size:13px}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.menu button{min-height:70px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #dfe2ee;border-radius:12px;background:white;margin:5px 0 10px}
+textarea{min-height:80px;resize:vertical}
+label{font-weight:700;font-size:14px}
+.chat{height:430px;overflow:auto;padding:10px;background:#f3f5fb;border-radius:16px}
+.msg{max-width:82%;padding:12px 15px;border-radius:16px;margin:8px 0;white-space:pre-wrap}
+.me{margin-left:auto;background:#5967ff;color:white}
+.bot{background:white}
+.chatbar{display:flex;gap:8px;margin-top:10px}
+.chatbar textarea{margin:0}
+.hidden{display:none!important}
+.preview{max-width:180px;max-height:150px;border-radius:12px;margin:8px}
+.timer{font-size:64px;text-align:center;font-weight:900;margin:15px}
+.big{font-size:40px;font-weight:900}
+table{width:100%;border-collapse:collapse}
+td,th{padding:9px;border-bottom:1px solid #eee;text-align:left}
+.danger{background:#ef4444}
+.secondary{background:#e5e7eb;color:#222}
+.success{background:#16a34a}
+.back{background:#374151;margin-bottom:12px}
+#roleScreen{text-align:center;padding-top:60px}
+#roleScreen button{margin:8px;font-size:18px;padding:18px 28px}
+canvas{max-width:100%;height:auto}
+.gameGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.gameCard{background:linear-gradient(135deg,#fff,#f1f3ff);border:2px solid #e4e6ff;border-radius:20px;padding:20px;text-align:center;cursor:pointer}
+.gameIcon{font-size:55px}
+.gameCard h3{margin:8px 0}
+.gameArea{background:#111827;border-radius:18px;padding:12px;text-align:center;color:white;overflow:hidden}
+#tetrisCanvas,#pongCanvas{background:#05070d;border-radius:12px;max-width:100%}
+#tower{height:430px;background:linear-gradient(#dff3ff,#f9fbff);border-radius:15px;position:relative;overflow:hidden;border:2px solid #dce3ff}
+.block{position:absolute;height:28px;border-radius:5px;background:#5967ff;border:2px solid #fff;box-shadow:0 3px 5px #0003}
+#jenga{height:430px;background:#f7f1df;border-radius:15px;position:relative;overflow:hidden;border:2px solid #d8c9a5}
+.jblock{position:absolute;height:25px;width:110px;background:#c99250;border:2px solid #815b32;border-radius:4px;cursor:pointer}
+.gameButtons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.score{font-size:24px;font-weight:900;margin:8px}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🎓 LGS Ajandam</h1>
+<div>LGS çalışma arkadaşın</div>
+</header>
+
+<main>
+
+<section id="roleScreen" class="page active">
+<div class="card">
+<h2>👋 Hoş geldin!</h2>
+<p>Önce rolünü seç.</p>
+<button onclick="setRole('student')">🎒 Öğrenciyim</button>
+<button onclick="setRole('teacher')">👩‍🏫 Öğretmenim</button>
+</div>
+</section>
+
+<section id="home" class="page">
+<div class="card">
+<h2>🏠 Ana Sayfa</h2>
+<div class="grid">
+<div><div class="stat" id="qCount">0</div><div class="small">Bugün çözülen soru</div></div>
+<div><div class="stat" id="streak">0 🔥</div><div class="small">Günlük seri</div></div>
+<div><div class="stat" id="goal">0</div><div class="small">Günlük hedef</div></div>
+<div><div class="stat" id="used">0 dk</div><div class="small">Kullanılan süre</div></div>
+</div>
+</div>
+
+<div class="card">
+<h3>📊 Son 7 Gün</h3>
+<canvas id="chart" width="800" height="220"></canvas>
+</div>
+
+<div class="card">
+<h3>⚡ Hızlı Menü</h3>
+<div class="menu">
+<button onclick="showPage('timer')">⏱️ Soru Kronometresi</button>
+<button onclick="showPage('ai')">🤖 AI Rehberim</button>
+<button onclick="showPage('pomodoro')">🍅 Pomodoro</button>
+<button onclick="showPage('games')">🎮 Mini Oyunlar</button>
+<button onclick="showPage('agenda')">📅 Ajanda</button>
+<button onclick="showPage('messages')">💬 Öğretmenim</button>
+<button onclick="showPage('forum')">🏫 Sınıf Forumu</button>
+<button onclick="showPage('records')">📚 Kayıtlar</button>
+<button onclick="showPage('settings')">⚙️ Ayarlar</button>
+</div>
+</div>
+</section>
+
+<section id="timer" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>⏱️ Soru Kronometresi</h2>
+
+<label>Ders</label>
+<select id="timerSubject">
+<option>Türkçe</option>
+<option>Matematik</option>
+<option>Fen Bilimleri</option>
+<option>T.C. İnkılap Tarihi ve Atatürkçülük</option>
+<option>Din Kültürü ve Ahlak Bilgisi</option>
+<option>İngilizce</option>
+</select>
+
+<label>Konu</label>
+<input id="timerTopic" placeholder="Örn. Üslü ifadeler">
+
+<label>Soru kaynağı</label>
+<select id="timerSource">
+<option>Ders Kitabı</option>
+<option>Soru Bankası</option>
+<option>Deneme</option>
+<option>Fasikül</option>
+<option>İnternetten</option>
+<option>Öğretmen Kaynağı</option>
+<option>Diğer</option>
+</select>
+
+<label>Kaynak adı</label>
+<input id="timerSourceName" placeholder="Örn. Hız Yayınları">
+
+<div class="timer" id="timerDisplay">00:00</div>
+
+<div class="grid">
+<div class="card"><div class="stat" id="sessionQuestions">0</div><div class="small">Çözülen soru</div></div>
+<div class="card"><div class="stat" id="sessionAverage">0 sn</div><div class="small">Ortalama süre</div></div>
+<div class="card"><div class="stat" id="lastQuestionTime">0 sn</div><div class="small">Son soru</div></div>
+</div>
+
+<button class="success" onclick="questionSolved()">✅ Soru Çözdüm</button>
+<button class="danger" onclick="finishTimer()">⏹️ Oturumu Bitir</button>
+<button class="secondary" onclick="resetTimer()">🔄 Sıfırla</button>
+
+<h3>Bu oturum</h3>
+<div id="sessionList"></div>
+</div>
+</section>
+
+<section id="ai" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>🤖 AI Rehberim 🎓✏️</h2>
+<div id="chat" class="chat"></div>
+<div id="imagePreviewBox"></div>
+<div class="chatbar">
+<textarea id="aiInput" placeholder="Bir şey sor..."></textarea>
+</div>
+<div class="grid">
+<label class="secondary" style="padding:12px;text-align:center;cursor:pointer">
+📷 Soru Fotoğrafı
+<input id="questionImage" type="file" accept="image/*" style="display:none" onchange="previewImage()">
+</label>
+<button onclick="sendAI()">Gönder 🚀</button>
+<button class="secondary" onclick="newChat()">🆕 Yeni Sohbet</button>
+<button class="danger" onclick="deleteChat()">🗑️ Sohbeti Sil</button>
+</div>
+</div>
+</section>
+
+<section id="pomodoro" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>🍅 Pomodoro</h2>
+<div class="timer" id="pomDisplay">25:00</div>
+<p style="text-align:center" id="pomStatus">Çalışma zamanı</p>
+<div class="gameButtons">
+<button onclick="startPomodoro()">▶️ Başlat</button>
+<button onclick="pausePomodoro()">⏸️ Duraklat</button>
+<button onclick="resetPomodoro()">🔄 Sıfırla</button>
+</div>
+</div>
+</section>
+
+<section id="games" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>🎮 Mini Oyunlar</h2>
+<p class="small">Biraz kafa dağıt, sonra derse geri dön! 😎</p>
+
+<div class="gameGrid">
+<div class="gameCard" onclick="openGame('tetris')">
+<div class="gameIcon">🧱</div>
+<h3>Tetris</h3>
+<p>Satırları tamamla!</p>
+</div>
+
+<div class="gameCard" onclick="openGame('pong')">
+<div class="gameIcon">🏓</div>
+<h3>Pong</h3>
+<p>Topu kaçırma!</p>
+</div>
+
+<div class="gameCard" onclick="openGame('tower')">
+<div class="gameIcon">🏗️</div>
+<h3>Kule Dizme</h3>
+<p>En yüksek kuleyi yap!</p>
+</div>
+
+<div class="gameCard" onclick="openGame('jenga')">
+<div class="gameIcon">🪵</div>
+<h3>Jenga</h3>
+<p>Kuleyi devirmeden blok çek!</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="gameTetris" class="page">
+<button class="back" onclick="showPage('games')">← Oyunlara Dön</button>
+<div class="card">
+<h2>🧱 Tetris</h2>
+<div class="score">Skor: <span id="tetrisScore">0</span></div>
+<div class="gameArea">
+<canvas id="tetrisCanvas" width="240" height="480"></canvas>
+<div class="gameButtons">
+<button onclick="startTetris()">▶️ Başlat</button>
+<button onclick="pauseTetris()">⏸️ Dur</button>
+<button onclick="resetTetris()">🔄 Yeniden</button>
+</div>
+<p>⬅️ ➡️ hareket • ⬇️ hızlandır • ⬆️ döndür</p>
+</div>
+</div>
+</section>
+
+<section id="gamePong" class="page">
+<button class="back" onclick="showPage('games')">← Oyunlara Dön</button>
+<div class="card">
+<h2>🏓 Pong</h2>
+<div class="score">Skor: <span id="pongScore">0</span></div>
+<div class="gameArea">
+<canvas id="pongCanvas" width="600" height="350"></canvas>
+<div class="gameButtons">
+<button onclick="startPong()">▶️ Başlat</button>
+<button onclick="pausePong()">⏸️ Dur</button>
+<button onclick="resetPong()">🔄 Yeniden</button>
+</div>
+<p>Mouse / parmak ile raketi hareket ettir.</p>
+</div>
+</div>
+</section>
+
+<section id="gameTower" class="page">
+<button class="back" onclick="showPage('games')">← Oyunlara Dön</button>
+<div class="card">
+<h2>🏗️ Kule Dizme</h2>
+<div class="score">Kat: <span id="towerScore">0</span></div>
+<div id="tower"></div>
+<div class="gameButtons">
+<button onclick="dropTowerBlock()">🏗️ Bloğu Bırak</button>
+<button onclick="resetTower()">🔄 Yeniden</button>
+</div>
+</div>
+</section>
+
+<section id="gameJenga" class="page">
+<button class="back" onclick="showPage('games')">← Oyunlara Dön</button>
+<div class="card">
+<h2>🪵 Jenga</h2>
+<div class="score">Blok: <span id="jengaScore">0</span></div>
+<div id="jenga"></div>
+<div class="gameButtons">
+<button onclick="resetJenga()">🔄 Yeni Kule</button>
+</div>
+<p class="small">Bloklara dokun. Kule devrilmeden mümkün olduğunca çok blok çıkar!</p>
+</div>
+</section>
+
+<section id="agenda" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>📅 Ajanda</h2>
+<input id="agendaText" placeholder="Ne yapacaksın?">
+<select id="agendaSubject">
+<option>Türkçe</option>
+<option>Matematik</option>
+<option>Fen Bilimleri</option>
+<option>T.C. İnkılap Tarihi ve Atatürkçülük</option>
+<option>Din Kültürü ve Ahlak Bilgisi</option>
+<option>İngilizce</option>
+</select>
+<input id="agendaDate" type="date">
+<button onclick="addAgenda()">➕ Ekle</button>
+</div>
+<div class="card" id="agendaList"></div>
+</section>
+
+<section id="records" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>📚 Soru Kayıtları</h2>
+<div id="recordsList"></div>
+</div>
+</section>
+
+<section id="messages" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>💬 Öğretmenim</h2>
+<div id="messagesList"></div>
+<textarea id="teacherMessage" placeholder="Öğretmenine mesaj yaz..."></textarea>
+<button onclick="sendTeacherMessage()">📨 Gönder</button>
+</div>
+</section>
+
+<section id="forum" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>🏫 Sınıf Forumu</h2>
+<input id="forumTitle" placeholder="Başlık">
+<textarea id="forumText" placeholder="Mesajın..."></textarea>
+<button onclick="addForum()">📢 Paylaş</button>
+</div>
+<div class="card" id="forumList"></div>
+</section>
+
+<section id="settings" class="page">
+<button class="back" onclick="showPage('home')">← Ana Sayfa</button>
+<div class="card">
+<h2>⚙️ Ayarlar</h2>
+
+<label>Ad</label>
+<input id="setName">
+
+<label>Sınıf</label>
+<input id="setClass">
+
+<label>Rol</label>
+<select id="setRole">
+<option value="student">Öğrenci</option>
+<option value="teacher">Öğretmen</option>
+</select>
+
+<label>Günlük soru hedefi</label>
+<input id="setGoal" type="number" min="1">
+
+<label>Günlük maksimum tablet süresi (dakika)</label>
+<input id="setLimit" type="number" min="1">
+
+<label>Öğretmen telefon numarası</label>
+<input id="setTeacherPhone" type="tel">
+
+<h3>🍅 Pomodoro Ayarları</h3>
+
+<label>Çalışma süresi</label>
+<input id="pomStudy" type="number">
+
+<label>Kısa mola</label>
+<input id="pomShort" type="number">
+
+<label>Uzun mola</label>
+<input id="pomLong" type="number">
+
+<label>Uzun moladan önce çalışma sayısı</label>
+<input id="pomCycles" type="number">
+
+<label>
+<input id="soundEnabled" type="checkbox" style="width:auto">
+🔊 Ses efektleri
+</label>
+
+<button onclick="saveSettings()">💾 Kaydet</button>
+<button class="danger" onclick="clearAll()">🗑️ Tüm Verileri Sil</button>
+</div>
+</section>
+
+<section id="teacher" class="page">
+<div class="card">
+<h2>👩‍🏫 Öğretmen Paneli</h2>
+<button onclick="showPage('messages')">💬 Mesajlar</button>
+<button onclick="showPage('forum')">🏫 Sınıf Forumu</button>
+<button onclick="showPage('settings')">⚙️ Ayarlar</button>
+</div>
+</section>
+
+</main>
+
+<script>
+const KEY="lgs_ajandam_final_v2";
+
+let data=JSON.parse(localStorage.getItem(KEY)||"null")||{
+role:null,
+name:"",
+className:"",
+goal:50,
+limit:120,
+teacherPhone:"",
+sound:true,
+usedToday:0,
+pom:{study:25,short:5,long:15,cycles:4},
+questions:[],
+agenda:[],
+messages:[],
+forum:[],
+chats:[]
+};
+
+function save(){
+localStorage.setItem(KEY,JSON.stringify(data));
+}
+
+function today(){
+return new Date().toISOString().slice(0,10);
+}
+
+function secText(s){
+s=Math.max(0,Math.round(s));
+return Math.floor(s/60).toString().padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+
+function playSound(type="click"){
+if(!data.sound)return;
+try{
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+if(!AudioCtx)return;
+const ctx=new AudioCtx();
+const osc=ctx.createOscillator();
+const gain=ctx.createGain();
+
+osc.connect(gain);
+gain.connect(ctx.destination);
+
+let f=520;
+if(type==="success")f=880;
+if(type==="done")f=660;
+if(type==="error")f=220;
+
+osc.frequency.value=f;
+osc.type="sine";
+
+gain.gain.setValueAtTime(.001,ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(.15,ctx.currentTime+.01);
+gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.18);
+
+osc.start();
+osc.stop(ctx.currentTime+.2);
+}catch(e){}
+}
+
+function setRole(r){
+data.role=r;
+save();
+showPage(r==="teacher"?"teacher":"home");
+}
+
+function showPage(id){
+stopAllGamesExcept(id);
+
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+let page=document.getElementById(id);
+if(page)page.classList.add("active");
+
+if(id==="home")updateHome();
+if(id==="timer")startFreshTimer();
+if(id==="agenda")renderAgenda();
+if(id==="records")renderRecords();
+if(id==="messages")renderMessages();
+if(id==="forum")renderForum();
+if(id==="settings")loadSettings();
+if(id==="ai")loadChat();
+if(id==="pomodoro")loadPomodoro();
+
+playSound("click");
+}
+
+function updateHome(){
+let t=today();
+let qs=data.questions.filter(q=>q.date===t);
+
+qCount.textContent=qs.length;
+goal.textContent=data.goal;
+used.textContent=Math.round((data.usedToday||0)/60)+" dk";
+
+let days=[...new Set(data.questions.map(q=>q.date))].sort().reverse();
+let streak=0;
+let d=new Date();
+
+while(days.includes(d.toISOString().slice(0,10))){
+streak++;
+d.setDate(d.getDate()-1);
+}
+
+document.getElementById("streak").textContent=streak+" 🔥";
+
+drawChart();
+}
+
+function drawChart(){
+let c=document.getElementById("chart");
+if(!c)return;
+
+let x=c.getContext("2d");
+x.clearRect(0,0,c.width,c.height);
+
+let vals=[];
+
+for(let i=6;i>=0;i--){
+let d=new Date();
+d.setDate(d.getDate()-i);
+let s=d.toISOString().slice(0,10);
+vals.push(data.questions.filter(q=>q.date===s).length);
+}
+
+let max=Math.max(1,...vals);
+
+x.strokeStyle="#5967ff";
+x.lineWidth=4;
+x.beginPath();
+
+vals.forEach((v,i)=>{
+let px=50+i*105;
+let py=190-(v/max)*150;
+
+if(i===0)x.moveTo(px,py);
+else x.lineTo(px,py);
+
+x.fillStyle="#20243a";
+x.fillText(v,px-4,py-10);
+});
+
+x.stroke();
+}
+
+let timerStart=0;
+let timerLast=0;
+let timerInterval=null;
+let sessionQuestions=[];
+let timerRunning=false;
+
+function startFreshTimer(){
+clearInterval(timerInterval);
+
+timerStart=Date.now();
+timerLast=timerStart;
+sessionQuestions=[];
+timerRunning=true;
+
+document.getElementById("sessionList").innerHTML="";
+document.getElementById("sessionQuestions").textContent="0";
+document.getElementById("sessionAverage").textContent="0 sn";
+document.getElementById("lastQuestionTime").textContent="0 sn";
+
+updateTimer();
+timerInterval=setInterval(updateTimer,250);
+}
+
+function updateTimer(){
+if(!timerRunning)return;
+
+let elapsed=(Date.now()-timerStart)/1000;
+document.getElementById("timerDisplay").textContent=secText(elapsed);
+}
+
+function questionSolved(){
+if(!timerRunning)startFreshTimer();
+
+let now=Date.now();
+let duration=(now-timerLast)/1000;
+
+timerLast=now;
+
+let q={
+id:Date.now(),
+date:today(),
+time:new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}),
+subject:document.getElementById("timerSubject").value,
+topic:document.getElementById("timerTopic").value||"Belirtilmedi",
+source:document.getElementById("timerSource").value,
+sourceName:document.getElementById("timerSourceName").value||document.getElementById("timerSource").value,
+seconds:Math.round(duration)
+};
+
+sessionQuestions.push(q);
+data.questions.push(q);
+
+save();
+renderSession();
+updateHome();
+playSound("success");
+}
+
+function renderSession(){
+let list=document.getElementById("sessionList");
+
+list.innerHTML=sessionQuestions.map((q,i)=>`
+<div class="card">
+<b>${i+1}. soru</b> — ${q.subject}<br>
+<span class="small">${q.topic} • ${q.sourceName} • ⏱️ ${secText(q.seconds)}</span>
+</div>
+`).join("");
+
+let total=sessionQuestions.reduce((a,q)=>a+q.seconds,0);
+
+document.getElementById("sessionQuestions").textContent=sessionQuestions.length;
+document.getElementById("sessionAverage").textContent=
+sessionQuestions.length?Math.round(total/sessionQuestions.length)+" sn":"0 sn";
+
+document.getElementById("lastQuestionTime").textContent=
+sessionQuestions.length?sessionQuestions.at(-1).seconds+" sn":"0 sn";
+}
+
+function finishTimer(){
+clearInterval(timerInterval);
+timerRunning=false;
+
+if(sessionQuestions.length){
+alert(
+"Oturum kaydedildi! 🎉\n\n"+
+sessionQuestions.length+" soru\n"+
+"Ortalama: "+
+Math.round(sessionQuestions.reduce((a,q)=>a+q.seconds,0)/sessionQuestions.length)+
+" saniye"
+);
+}
+
+playSound("done");
+}
+
+function resetTimer(){
+startFreshTimer();
+}
+
+let pomSeconds=0;
+let pomInterval=null;
+let pomRunning=false;
+
+function loadPomodoro(){
+pomSeconds=data.pom.study*60;
+document.getElementById("pomDisplay").textContent=secText(pomSeconds);
+}
+
+function startPomodoro(){
+if(pomRunning)return;
+
+if(!pomSeconds)pomSeconds=data.pom.study*60;
+
+pomRunning=true;
+
+pomInterval=setInterval(()=>{
+pomSeconds--;
+renderPom();
+
+if(pomSeconds<=0){
+clearInterval(pomInterval);
+pomRunning=false;
+playSound("done");
+alert("🍅 Süre tamamlandı!");
+}
+},1000);
+}
+
+function pausePomodoro(){
+pomRunning=false;
+clearInterval(pomInterval);
+}
+
+function resetPomodoro(){
+pausePomodoro();
+pomSeconds=data.pom.study*60;
+renderPom();
+}
+
+function renderPom(){
+document.getElementById("pomDisplay").textContent=secText(pomSeconds);
+}
+
+function addAgenda(){
+let text=document.getElementById("agendaText").value.trim();
+if(!text)return;
+
+data.agenda.push({
+text,
+subject:document.getElementById("agendaSubject").value,
+date:document.getElementById("agendaDate").value
+});
+
+save();
+
+document.getElementById("agendaText").value="";
+renderAgenda();
+playSound("success");
+}
+
+function renderAgenda(){
+let list=document.getElementById("agendaList");
+
+list.innerHTML=data.agenda.map((a,i)=>`
+<div class="card">
+<b>${a.text}</b><br>
+${a.subject} • ${a.date}
+<button class="danger" onclick="deleteAgenda(${i})">Sil</button>
+</div>
+`).join("")||"<p>Henüz görev yok.</p>";
+}
+
+function deleteAgenda(i){
+data.agenda.splice(i,1);
+save();
+renderAgenda();
+}
+
+function renderRecords(){
+let arr=[...data.questions].reverse();
+
+document.getElementById("recordsList").innerHTML=
+arr.map(q=>`
+<div class="card">
+<b>${q.subject}</b> — ${q.topic}<br>
+${q.sourceName} • ${q.date} ${q.time}<br>
+⏱️ ${secText(q.seconds)}
+</div>
+`).join("")||"<p>Henüz soru kaydı yok.</p>";
+}
+
+function loadSettings(){
+setName.value=data.name;
+setClass.value=data.className;
+setRole.value=data.role||"student";
+setGoal.value=data.goal;
+setLimit.value=data.limit;
+setTeacherPhone.value=data.teacherPhone;
+pomStudy.value=data.pom.study;
+pomShort.value=data.pom.short;
+pomLong.value=data.pom.long;
+pomCycles.value=data.pom.cycles;
+soundEnabled.checked=data.sound;
+}
+
+function saveSettings(){
+data.name=setName.value;
+data.className=setClass.value;
+data.role=setRole.value;
+data.goal=+setGoal.value||50;
+data.limit=+setLimit.value||120;
+data.teacherPhone=setTeacherPhone.value;
+
+data.pom={
+study:+pomStudy.value||25,
+short:+pomShort.value||5,
+long:+pomLong.value||15,
+cycles:+pomCycles.value||4
+};
+
+data.sound=soundEnabled.checked;
+
+save();
+
+alert("Ayarlar kaydedildi! ✅");
+
+showPage(data.role==="teacher"?"teacher":"home");
+}
+
+function sendTeacherMessage(){
+let t=document.getElementById("teacherMessage").value.trim();
+if(!t)return;
+
+data.messages.push({
+text:t,
+from:data.role,
+date:new Date().toLocaleString("tr-TR")
+});
+
+document.getElementById("teacherMessage").value="";
+
+save();
+renderMessages();
+playSound("success");
+}
+
+function renderMessages(){
+document.getElementById("messagesList").innerHTML=
+data.messages.map(m=>`
+<div class="msg ${m.from==="student"?"me":"bot"}">
+${m.text}<br>
+<small>${m.date}</small>
+</div>
+`).join("")||"<p>Henüz mesaj yok.</p>";
+}
+
+function addForum(){
+let title=document.getElementById("forumTitle").value.trim();
+let text=document.getElementById("forumText").value.trim();
+
+if(!title||!text)return;
+
+data.forum.push({
+title,
+text,
+date:new Date().toLocaleString("tr-TR")
+});
+
+document.getElementById("forumTitle").value="";
+document.getElementById("forumText").value="";
+
+save();
+renderForum();
+playSound("success");
+}
+
+function renderForum(){
+document.getElementById("forumList").innerHTML=
+data.forum.map(p=>`
+<div class="card">
+<h3>${p.title}</h3>
+<p>${p.text}</p>
+<small>${p.date}</small>
+</div>
+`).join("")||"<p>Henüz paylaşım yok.</p>";
+}
+
+function getChat(){
+if(!data.chats.length)data.chats.push({messages:[]});
+return data.chats[0];
+}
+
+function loadChat(){
+let c=getChat();
+let box=document.getElementById("chat");
+box.innerHTML="";
+
+c.messages.forEach(m=>{
+addChatBubble(
+m.text,
+m.role==="user"?"me":"bot",
+m.image,
+false
+);
+});
+
+if(!c.messages.length){
+addChatBubble(
+"Merhaba! 🎓 Ben senin LGS rehberinim. Bir şey sorabilir veya soru fotoğrafı gönderebilirsin.",
+"bot"
+);
+}
+}
+
+function addChatBubble(text,type,img){
+let d=document.createElement("div");
+d.className="msg "+type;
+d.textContent=text;
+
+if(img){
+let im=document.createElement("img");
+im.src=img;
+im.className="preview";
+d.appendChild(im);
+}
+
+let box=document.getElementById("chat");
+box.appendChild(d);
+box.scrollTop=box.scrollHeight;
+}
+
+function newChat(){
+data.chats=[{messages:[]}];
+save();
+loadChat();
+}
+
+function deleteChat(){
+if(confirm("Bu sohbet silinsin mi?")){
+data.chats=[{messages:[]}];
+save();
+loadChat();
+}
+}
+
+function fileToDataURL(file){
+return new Promise((resolve,reject)=>{
+let r=new FileReader();
+r.onload=()=>resolve(r.result);
+r.onerror=reject;
+r.readAsDataURL(file);
+});
+}
+
+async function previewImage(){
+let f=document.getElementById("questionImage").files[0];
+if(!f)return;
+
+let url=await fileToDataURL(f);
+
+document.getElementById("imagePreviewBox").innerHTML=
+`<img src="${url}" class="preview">`;
+}
+
+async function sendAI(){
+let text=document.getElementById("aiInput").value.trim();
+let file=document.getElementById("questionImage").files[0];
+
+if(!text&&!file)return;
+
+let image=null;
+
+if(file){
+image=await fileToDataURL(file);
+}
+
+let c=getChat();
+
+c.messages.push({
+role:"user",
+text:text||"Bu görseldeki soruyu oku ve bana yardımcı ol.",
+image
+});
+
+addChatBubble(
+text||"📷 Bu soruyu oku ve bana yardımcı ol.",
+"me",
+image
+);
+
+document.getElementById("aiInput").value="";
+document.getElementById("questionImage").value="";
+document.getElementById("imagePreviewBox").innerHTML="";
+
+addChatBubble("⏳ Soruyu okuyorum...","bot");
+
+try{
+let response=await fetch("/api/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+message:text||"Bu görseldeki soruyu oku ve çözmeme yardımcı ol.",
+image,
+history:c.messages.slice(-20)
+})
+});
+
+if(!response.ok)throw new Error();
+
+let result=await response.json();
+
+let answer=result.answer||result.output||"Yanıt alınamadı.";
+
+let bots=document.querySelectorAll("#chat .bot");
+bots[bots.length-1].textContent=answer;
+
+c.messages.push({
+role:"assistant",
+text:answer
+});
+
+save();
+
+}catch(e){
+
+let answer=
+"⚠️ AI bağlantısı henüz kurulmamış. Gerçek AI sunucusu bağlandığında fotoğraftaki soruyu okuyup çözebileceğim.";
+
+let bots=document.querySelectorAll("#chat .bot");
+bots[bots.length-1].textContent=answer;
+
+c.messages.push({
+role:"assistant",
+text:answer
+});
+
+save();
+}
+}
+
+
+/* =========================
+   MİNİ OYUNLAR
+========================= */
+
+function openGame(game){
+if(game==="tetris"){
+showPage("gameTetris");
+resetTetris();
+}
+
+if(game==="pong"){
+showPage("gamePong");
+resetPong();
+}
+
+if(game==="tower"){
+showPage("gameTower");
+resetTower();
+}
+
+if(game==="jenga"){
+showPage("gameJenga");
+resetJenga();
+}
+}
+
+function stopAllGamesExcept(id){
+if(id!=="gameTetris")pauseTetris();
+if(id!=="gamePong")pausePong();
+}
+
+
+/* =========================
+   TETRIS
+========================= */
+
+const tc=document.getElementById("tetrisCanvas");
+const tx=tc.getContext("2d");
+
+const COLS=10;
+const ROWS=20;
+const SIZE=24;
+
+let board=[];
+let tPiece=null;
+let tX=3;
+let tY=0;
+let tScore=0;
+let tRunning=false;
+let tInterval=null;
+
+const pieces=[
+[[1,1,1,1]],
+[[1,1],[1,1]],
+[[0,1,0],[1,1,1]],
+[[1,0,0],[1,1,1]],
+[[0,0,1],[1,1,1]],
+[[1,1,0],[0,1,1]],
+[[0,1,1],[1,1,0]]
+];
+
+function randomPiece(){
+return pieces[Math.floor(Math.random()*pieces.length)].map(r=>r.slice());
+}
+
+function resetTetris(){
+pauseTetris();
+
+board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+tPiece=randomPiece();
+tX=3;
+tY=0;
+tScore=0;
+
+document.getElementById("tetrisScore").textContent=tScore;
+
+drawTetris();
+}
+
+function startTetris(){
+if(tRunning)return;
+
+tRunning=true;
+
+tInterval=setInterval(()=>{
+if(!moveTetris(0,1)){
+lockTetris();
+}
+},500);
+}
+
+function pauseTetris(){
+tRunning=false;
+clearInterval(tInterval);
+tInterval=null;
+}
+
+function moveTetris(dx,dy){
+if(canTetrisMove(tX+dx,tY+dy,tPiece)){
+tX+=dx;
+tY+=dy;
+drawTetris();
+return true;
+}
+return false;
+}
+
+function canTetrisMove(px,py,piece){
+for(let y=0;y<piece.length;y++){
+for(let x=0;x<piece[y].length;x++){
+if(!piece[y][x])continue;
+
+let nx=px+x;
+let ny=py+y;
+
+if(nx<0||nx>=COLS||ny>=ROWS)return false;
+if(ny>=0&&board[ny][nx])return false;
+}
+}
+return true;
+}
+
+function rotatePiece(){
+let h=tPiece.length;
+let w=tPiece[0].length;
+let r=Array.from({length:w},()=>Array(h).fill(0));
+
+for(let y=0;y<h;y++){
+for(let x=0;x<w;x++){
+r[x][h-1-y]=tPiece[y][x];
+}
+}
+
+if(canTetrisMove(tX,tY,r)){
+tPiece=r;
+drawTetris();
+}
+}
+
+function lockTetris(){
+for(let y=0;y<tPiece.length;y++){
+for(let x=0;x<tPiece[y].length;x++){
+if(tPiece[y][x]){
+if(tY+y<0){
+gameOverTetris();
+return;
+}
+board[tY+y][tX+x]=1;
+}
+}
+}
+
+let lines=0;
+
+for(let y=ROWS-1;y>=0;y--){
+if(board[y].every(v=>v)){
+board.splice(y,1);
+board.unshift(Array(COLS).fill(0));
+lines++;
+y++;
+}
+}
+
+tScore+=lines*100;
+document.getElementById("tetrisScore").textContent=tScore;
+
+tPiece=randomPiece();
+tX=3;
+tY=0;
+
+if(!canTetrisMove(tX,tY,tPiece)){
+gameOverTetris();
+}
+
+drawTetris();
+}
+
+function gameOverTetris(){
+pauseTetris();
+playSound("error");
+alert("🧱 Oyun bitti!\nSkor: "+tScore);
+}
+
+function drawTetris(){
+tx.clearRect(0,0,tc.width,tc.height);
+
+for(let y=0;y<ROWS;y++){
+for(let x=0;x<COLS;x++){
+if(board[y][x]){
+tx.fillStyle="#5967ff";
+tx.fillRect(x*SIZE,y*SIZE,SIZE-1,SIZE-1);
+}
+}
+}
+
+if(tPiece){
+tx.fillStyle="#f59e0b";
+
+for(let y=0;y<tPiece.length;y++){
+for(let x=0;x<tPiece[y].length;x++){
+if(tPiece[y][x]){
+tx.fillRect(
+(tX+x)*SIZE,
+(tY+y)*SIZE,
+SIZE-1,
+SIZE-1
+);
+}
+}
+}
+}
+}
+
+document.addEventListener("keydown",e=>{
+if(!document.getElementById("gameTetris").classList.contains("active"))return;
+
+if(e.key==="ArrowLeft"){
+e.preventDefault();
+moveTetris(-1,0);
+}
+
+if(e.key==="ArrowRight"){
+e.preventDefault();
+moveTetris(1,0);
+}
+
+if(e.key==="ArrowDown"){
+e.preventDefault();
+moveTetris(0,1);
+}
+
+if(e.key==="ArrowUp"){
+e.preventDefault();
+rotatePiece();
+}
+});
+
+
+/* =========================
+   PONG
+========================= */
+
+const pc=document.getElementById("pongCanvas");
+const px=pc.getContext("2d");
+
+let pongRunning=false;
+let pongAnimation=null;
+let pongScoreValue=0;
+
+let paddle={
+x:250,
+y:325,
+w:100,
+h:12
+};
+
+let ball={
+x:300,
+y:175,
+r:8,
+dx:4,
+dy:4
+};
+
+let enemy={
+x:250,
+y:15,
+w:100,
+h:12
+};
+
+function resetPong(){
+pausePong();
+
+pongScoreValue=0;
+document.getElementById("pongScore").textContent=0;
+
+paddle.x=250;
+enemy.x=250;
+
+ball={
+x:300,
+y:175,
+r:8,
+dx:4,
+dy:4
+};
+
+drawPong();
+}
+
+function startPong(){
+if(pongRunning)return;
+pongRunning=true;
+pongLoop();
+}
+
+function pausePong(){
+pongRunning=false;
+if(pongAnimation)cancelAnimationFrame(pongAnimation);
+pongAnimation=null;
+}
+
+function pongLoop(){
+if(!pongRunning)return;
+
+updatePong();
+drawPong();
+
+pongAnimation=requestAnimationFrame(pongLoop);
+}
+
+function updatePong(){
+
+enemy.x+=(ball.x-(enemy.x+enemy.w/2))*.035;
+
+if(enemy.x<0)enemy.x=0;
+if(enemy.x+enemy.w>pc.width)enemy.x=pc.width-enemy.w;
+
+ball.x+=ball.dx;
+ball.y+=ball.dy;
+
+if(ball.x-ball.r<0||ball.x+ball.r>pc.width){
+ball.dx*=-1;
+}
+
+if(
+ball.y+ball.r>=paddle.y &&
+ball.y+ball.r<=paddle.y+paddle.h &&
+ball.x>=paddle.x &&
+ball.x<=paddle.x+paddle.w
+){
+ball.dy=-Math.abs(ball.dy);
+ball.dx+=(ball.x-(paddle.x+paddle.w/2))*.04;
+}
+
+if(
+ball.y-ball.r<=enemy.y+enemy.h &&
+ball.y-ball.r>=enemy.y &&
+ball.x>=enemy.x &&
+ball.x<=enemy.x+enemy.w
+){
+ball.dy=Math.abs(ball.dy);
+}
+
+if(ball.y>pc.height){
+pongScoreValue++;
+document.getElementById("pongScore").textContent=pongScoreValue;
+resetPongBall();
+}
+
+if(ball.y<0){
+playSound("error");
+alert("🏓 Rakip sayı aldı!");
+resetPongBall();
+}
+}
+
+function resetPongBall(){
+ball.x=pc.width/2;
+ball.y=pc.height/2;
+ball.dx=(Math.random()>.5?1:-1)*4;
+ball.dy=(Math.random()>.5?1:-1)*4;
+}
+
+function drawPong(){
+px.clearRect(0,0,pc.width,pc.height);
+
+px.fillStyle="#5967ff";
+px.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+
+px.fillStyle="#ef4444";
+px.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
+
+px.beginPath();
+px.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+px.fillStyle="#f59e0b";
+px.fill();
+
+px.setLineDash([8,8]);
+px.strokeStyle="#ffffff55";
+px.beginPath();
+px.moveTo(0,pc.height/2);
+px.lineTo(pc.width,pc.height/2);
+px.stroke();
+px.setLineDash([]);
+}
+
+pc.addEventListener("pointermove",e=>{
+let r=pc.getBoundingClientRect();
+let scaleX=pc.width/r.width;
+paddle.x=(e.clientX-r.left)*scaleX-paddle.w/2;
+
+if(paddle.x<0)paddle.x=0;
+if(paddle.x+paddle.w>pc.width)paddle.x=pc.width-paddle.w;
+});
+
+pc.addEventListener("pointerdown",e=>{
+let r=pc.getBoundingClientRect();
+let scaleX=pc.width/r.width;
+paddle.x=(e.clientX-r.left)*scaleX-paddle.w/2;
+});
+
+
+/* =========================
+   KULE DİZME
+========================= */
+
+let towerCount=0;
+let towerWidth=130;
+let towerX=60;
+let towerDirection=1;
+
+function resetTower(){
+towerCount=0;
+towerWidth=130;
+towerX=60;
+towerDirection=1;
+
+document.getElementById("towerScore").textContent=0;
+document.getElementById("tower").innerHTML="";
+}
+
+function dropTowerBlock(){
+
+let area=document.getElementById("tower");
+let width=area.clientWidth||300;
+
+let previous=document.querySelector("#tower .block:last-child");
+
+let targetX=towerX;
+
+if(previous){
+let prevX=parseFloat(previous.style.left);
+let prevW=parseFloat(previous.style.width);
+
+let overlap=Math.min(targetX+towerWidth,prevX+prevW)-
+Math.max(targetX,prevX);
+
+if(overlap<25){
+playSound("error");
+alert("🏗️ Kule devrildi!\nKat: "+towerCount);
+resetTower();
+return;
+}
+
+targetX=Math.max(targetX,prevX);
+towerWidth=overlap;
+}
+
+let block=document.createElement("div");
+block.className="block";
+block.style.width=towerWidth+"px";
+block.style.left=targetX+"px";
+block.style.bottom=(towerCount*30)+"px";
+
+area.appendChild(block);
+
+towerCount++;
+
+document.getElementById("towerScore").textContent=towerCount;
+
+towerX=targetX;
+
+if(towerCount%5===0)playSound("success");
+}
+
+
+/* =========================
+   JENGA
+========================= */
+
+let jengaCount=0;
+
+function resetJenga(){
+
+let area=document.getElementById("jenga");
+
+area.innerHTML="";
+jengaCount=0;
+
+document.getElementById("jengaScore").textContent=0;
+
+for(let row=0;row<10;row++){
+
+for(let col=0;col<3;col++){
+
+let block=document.createElement("div");
+block.className="jblock";
+
+let horizontal=row%2===0;
+
+if(horizontal){
+block.style.width="105px";
+block.style.left=(40+col*38)+"px";
+block.style.bottom=(row*28+10)+"px";
+}else{
+block.style.width="105px";
+block.style.transform="rotate(90deg)";
+block.style.left=(40+col*38)+"px";
+block.style.bottom=(row*28+10)+"px";
+}
+
+block.addEventListener("click",()=>{
+removeJengaBlock(block);
+});
+
+area.appendChild(block);
+}
+}
+}
+
+function removeJengaBlock(block){
+
+if(!block.parentNode)return;
+
+block.remove();
+
+jengaCount++;
+
+document.getElementById("jengaScore").textContent=jengaCount;
+
+let remaining=document.querySelectorAll("#jenga .jblock").length;
+
+if(remaining<12){
+playSound("error");
+alert("🪵 Jenga devrildi!\nÇıkardığın blok: "+jengaCount);
+resetJenga();
+}else{
+playSound("success");
+}
+}
+
+
+/* =========================
+   VERİLER
+========================= */
+
+function clearAll(){
+if(confirm("Tüm veriler silinsin mi?")){
+localStorage.removeItem(KEY);
+location.reload();
+}
+}
+
+if(data.role){
+document.getElementById("roleScreen").classList.remove("active");
+showPage(data.role==="teacher"?"teacher":"home");
+}
+</script>
+
+</body>
+</html>
